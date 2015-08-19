@@ -47,43 +47,48 @@ start syntax Program = Command*;
 
 
 
-lexical Bool = "true" |  "false";
-lexical Number = "."? [0-9]+ !>> [0-9];
-syntax Expr = Bool | Number| VarId | 
-			  Expr "+"  Expr |
-			  Expr "*"  Expr |
-			  Expr "/"  Expr |
-			  Expr "-"  Expr |
+
+syntax Expr = Bool | Number| VarId  
+			  > left div: Expr "/"  Expr 
+			  > left div: Expr "*"  Expr 
+			  > left (Expr "+"  Expr | Expr "-"  Expr)
+			  > left (
 			  Expr "\>"  Expr |
 			  Expr "\<"  Expr |
 			  Expr "\>="  Expr |
 			  Expr "\<="  Expr |
 			  Expr "="   Expr |
-			  Expr "!="  Expr |
-			  Expr "&&"  Expr |
-			  Expr "||"  Expr;
+			  Expr "!="  Expr)
+			  > left (  Expr "&&"  Expr | Expr "||"  Expr);
+
+
+syntax Command = 
+					  "if"  Expr   Block 
+					| "ifelse"  Expr   Block  Block
+					| "while"  Expr   Block
+					| "repeat"  Expr   Block 
+					| FunDef | FunCall
+					| "forward" Expr ";" | "fd" Expr ";" 
+				 	| "back" Expr ";" | "bk" Expr ";"
+				 	| "home;" | "right" Expr ";" | "rt" Expr ";" 
+				 	| "left" Expr ";" | "lt" Expr ";" | "pendown" ";" 
+				 	| "pd" ";" | "penup" ";" | "pu" ";";
 
 
 
-syntax Command = ControlFlow | Procedures; 
-syntax Drawing = "forward" Expr ";" | "fd" Expr ";" |
-				 "back" Expr ";" | "bk" Expr ";" |
-				 "home;" | "right" Expr ";" | "rt" Expr ";" |
-				 "left" Expr ";" | "lt" Expr ";" | "pendown;" |
-				 "pd;" | "penup;" | "pu;";
 
-syntax Procedures = left FunDef | FunCall;
-syntax FunCall = FunId Expr+ ";";
+
+syntax FunCall = FunId Expr* ";";
 syntax FunDef = "to " FunId VarId* Command* "end"; 
 
-syntax ControlFlow = "if"  Expr   Block 
-					|"ifelse"  Expr   Block  Block
-					|"while"  Expr   Block ;
 
 syntax Block = "[" Command* "]";
 
-lexical Keywords = "if" | "ifelse" | "while" | "repeat" | "forward" | "back" | "right" 
+keyword Reserved = "if" | "ifelse" | "while" | "repeat" | "forward" | "back" | "right" 
 					| "left" | "pendown" | "penup" | "to" | "true" | "false" | "end";
+ 
+lexical Bool = "true" |  "false";
+lexical Number = "-"? [0-9]? "."? [0-9]+ !>> [0-9];
  
 lexical VarId = ":" [a-zA-Z][a-zA-Z0-9]* !>> [a-zA-Z0-9];  
 lexical FunId = [a-zA-Z][a-zA-Z0-9]* !>> [a-zA-Z0-9];
