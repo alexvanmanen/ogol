@@ -90,8 +90,7 @@ lexical FunId = [a-zA-Z][a-zA-Z0-9]* !>> [a-zA-Z0-9];
 
 layout Standard = WhitespaceOrComment* !>> [\ \t\n\r] !>> "--";
 
-layout Standard 
-  = WhitespaceOrComment* !>> [\ \t\n\r] !>> "--"; 
+lexical WhitespaceOrComment = whitespace: Whitespace | comment: Comment; 
 lexical Whitespace = [\ \t\n\r];
 lexical Comment = @category="Comment" "--" ![\n\r]* $;  
   
