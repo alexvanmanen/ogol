@@ -43,7 +43,7 @@ Bonus:
 
 */
 
-start syntax Program = Command*; 
+start syntax Program = Command* commands; 
 
 
 
@@ -78,8 +78,8 @@ syntax Command =
 
 
 
-syntax FunCall = FunId Expr* ";";
-syntax FunDef = "to " FunId VarId* Command* "end"; 
+syntax FunCall = FunId id Expr* ";";
+syntax FunDef = "to" FunId id VarId* varIds Command* "end"; 
 
 
 syntax Block = "[" Command* "]";

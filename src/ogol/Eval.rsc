@@ -2,6 +2,7 @@ module ogol::Eval
 
 import ogol::Syntax;
 import ogol::Canvas;
+import ogol::Canvas2JS;
 import util::Math;
 import Prelude;
 
@@ -47,13 +48,19 @@ Canvas eval(Program p){
 		return eval(p);
 }
 
-Canvas eval((Program) `<Command* cmds>`){
-	
-	//p = desugar(p); //Werkt niet
-	funenv = ();
-	
+void main(){
+	Program p = (Program)`pendown; repeat 8 [ forward 40; right 90; ] forward 100; right 279; forward 20; to FuncD :n :len pd; end`;
+	p = desugar(p); //Werkt nog niet
+	Canvas cv = eval(p);
+	compileCanvas(cv, |file:///Users/manenvana/Documents/workspace/ogol/input/test.test|);
+}
 
-	VarEnv varEnv =();
+Canvas eval(p: (Program) `<Command* cmds>`){
+	
+	FunEnv funenv = collectFunDefs(p);
+	VarEnv varEnv = ();
+	println(funenv[(FunId)`FuncD`]);
+
 	int direction = 0;
 	bool pendown = false;
 	Point positionHome = <0,0>;
@@ -65,16 +72,14 @@ Canvas eval((Program) `<Command* cmds>`){
 	for (c <- cmds) {
 		state = eval(c, funenv, varEnv, state);
 	}
-	println(state);
+//	println(state);
 	return state.canvas;
 }
-
 
 FunEnv collectFunDefs(Program p)  = ( f.id: f | /FunDef f := p );
 
 
 
-//evalCommands((Command)`home;`, (), (), <<0,false,<0,0>>,[]>);
 State eval(Command cmd, FunEnv fenv, VarEnv venv, State state){
 
 
@@ -84,22 +89,39 @@ State eval(Command cmd, FunEnv fenv, VarEnv venv, State state){
 	} elseif (cmd == (Command)`penup;`){
 		 state.turtle.pendown =false; 
 	} elseif (cmd == (Command)`pendown;`){
-		 state.turtle.pendown =true; 
-	} elseif (cmd == (Command)`left  30;`){
-		state = setStep(state, 270 , 30);
-	} elseif (cmd == (Command)`right  60;`){
-		state = setStep(state, 90 , 30);
-
-	//} elseif (cmd == (Command)`left <Expr venv> ;`){
-		// println("hihi");
+		 state.turtle.pendown =true; 	
 	} else {
 		println("none of the above");
 	}
 	return state;
 }
 
-State setStep(State state, int direction, length){
+State eval((Command)`right <Expr x>;`, FunEnv fenv, VarEnv venv, State state) = turn(state, eval(x, venv));
+State eval((Command)`left  <Expr x>;`, FunEnv fenv, VarEnv venv, State state) = turn(state, eval(x, venv)); //doet het niet
+State eval((Command)`forward <Expr x>;`, FunEnv fenv, VarEnv venv, State state) = setStep(state, eval(x, venv));
+State eval((Command)`back <Expr x>;`, FunEnv fenv, VarEnv venv, State state) = setStep(state, eval(x, venv));
+
+
+State eval((Command)`repeat  <Expr e>  [ <Command* cmds> ]`, FunEnv fenv, VarEnv venv, State state) {
+	println("repeat");
+	int count = eval(e, venv);
+	for(int i <- [1..round(count)+1]) {
+		for (c <- cmds) {
+    		state = eval(c, fenv, venv, state);
+    	}
+	}
+	return state;
+}
+ 
+
+
+State turn(State state, int direction){
 	state.turtle.dir = state.turtle.dir +direction;
+	return state;
+}
+
+
+State setStep(State state, int length){
 	Point p1 = <state.turtle.position.x,state.turtle.position.y>;
 	Point p2 = getNewPoint(p1, state.turtle.dir, length);
 	state.turtle.position = p2;
@@ -124,13 +146,14 @@ test bool testTrue() = eval((Command)`home;`, (), (), <<0,false,<0,0>>,[]>)
 Value eval(Expr e, VarEnv venv){
 	switch(e){
 		case (Expr)`true` : return boolean(true);
-		case (Expr)`false` : return boolean(false);
-		case (Expr)`<Num n>` : return number(toReal(unparse(n)));	
-		case (Expr)`<VarId n>` : return venv[n];
-
-		
+		case (Expr)`false` : return boolean(false);	
+		case (Expr)`<VarId n>` : return venv[n];	
 	}
 }
+int eval((Expr)`<Number e>`, VarEnv venv){
+	return toInt(unparse(e));
+}
+
 
 Value eval((Expr) `<Expr lhs> + <Expr rhs>`, VarEnv venv)= 
 		number(x+y)
